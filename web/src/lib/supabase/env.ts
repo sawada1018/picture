@@ -15,12 +15,60 @@ export function normalizeSupabaseUrl(url: string): string {
     .replace(/\/$/, "");
 }
 
+export type EnvCheckItem = {
+  name: string;
+  ok: boolean;
+  hint?: string;
+};
+
+/** ログイン画面・診断用（値は返さない） */
+export function getRequiredEnvChecklist(): EnvCheckItem[] {
+  const env = getSupabaseEnv();
+  const hasSecret = !!getSupabaseServiceRoleKey();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const vercelHost = process.env.VERCEL_URL?.trim();
+
+  return [
+    {
+      name: "NEXT_PUBLIC_SUPABASE_URL",
+      ok: env.ok,
+      hint: env.ok ? undefined : "Supabase → Settings → API → Project URL",
+    },
+    {
+      name: "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      ok: env.ok,
+      hint: env.ok
+        ? undefined
+        : "Publishable key（sb_publishable_...）または NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    },
+    {
+      name: "SUPABASE_SECRET_KEY",
+      ok: hasSecret,
+      hint: hasSecret
+        ? undefined
+        : "Secret key（sb_secret_...）。NEXT_PUBLIC_ は付けない",
+    },
+    {
+      name: "NEXT_PUBLIC_SITE_URL",
+      ok: !!siteUrl,
+      hint: siteUrl
+        ? undefined
+        : vercelHost
+          ? `例: https://${vercelHost}`
+          : "本番の Vercel URL（https://〜.vercel.app）",
+    },
+  ];
+}
+
 export function getSupabaseEnv(): SupabaseEnv {
-  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const rawUrl = (
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+  )?.trim();
   const url = rawUrl ? normalizeSupabaseUrl(rawUrl) : undefined;
   const publishableKey = (
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY
   )?.trim();
 
   const missing: string[] = [];

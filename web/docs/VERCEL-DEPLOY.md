@@ -11,7 +11,10 @@
 
 Vercel ダッシュボード → プロジェクト → **Settings** → **Environment Variables**
 
-ローカルの `web/.env.local` と同じ値を、**Production / Preview / Development** すべてに登録します。
+ローカルの `web/.env.local` を開き、**名前を完全一致**させて値をコピーします。  
+**Production / Preview / Development** の3つすべてにチェック → **Save** → **Deployments → Redeploy**。
+
+> ⚠️ 保存しただけでは古いビルドのままです。必ず **Redeploy** してください。
 
 | 変数名 | 取得場所 |
 |--------|----------|

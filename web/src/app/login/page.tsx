@@ -1,6 +1,9 @@
 import { GuestStartForm } from "@/components/auth/guest-start-form";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
-import { supabaseEnvSetupHint } from "@/lib/supabase/env";
+import {
+  getRequiredEnvChecklist,
+  supabaseEnvSetupHint,
+} from "@/lib/supabase/env";
 
 export default async function LoginPage({
   searchParams,
@@ -8,6 +11,8 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
+  const envChecks = error === "config" ? getRequiredEnvChecklist() : null;
+  const healthPath = "/api/health";
 
   return (
     <div className="flex min-h-full flex-1 flex-col items-center justify-center px-4 py-12">
@@ -31,15 +36,35 @@ export default async function LoginPage({
               role="alert"
             >
               <p className="font-bold">Supabase の設定が不足しています</p>
-              <ul className="mt-2 list-inside list-disc space-y-1">
-                <li>NEXT_PUBLIC_SUPABASE_URL</li>
-                <li>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</li>
-                <li>SUPABASE_SECRET_KEY（サーバー用・保存 API など）</li>
-                <li>NEXT_PUBLIC_SITE_URL（本番の Vercel URL）</li>
+              <ul className="mt-2 space-y-2">
+                {envChecks?.map((item) => (
+                  <li key={item.name} className="leading-snug">
+                    <span
+                      className={
+                        item.ok ? "text-emerald-700" : "font-semibold text-amber-950"
+                      }
+                    >
+                      {item.ok ? "✓" : "✗"} {item.name}
+                    </span>
+                    {!item.ok && item.hint ? (
+                      <span className="mt-0.5 block text-[11px] text-amber-800/90">
+                        → {item.hint}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
               </ul>
               <p className="mt-2 leading-relaxed">{supabaseEnvSetupHint()}</p>
+              <p className="mt-2 text-[11px] leading-relaxed text-amber-800/90">
+                登録後は必ず <strong>Redeploy</strong>（保存だけでは反映されません）。
+                Root Directory は <strong>web</strong>。
+              </p>
               <p className="mt-1 text-[11px] text-amber-800/80">
-                詳細: web/docs/VERCEL-DEPLOY.md
+                診断:{" "}
+                <a href={healthPath} className="underline">
+                  {healthPath}
+                </a>
+                ・詳細: web/docs/VERCEL-DEPLOY.md
               </p>
             </div>
           )}
