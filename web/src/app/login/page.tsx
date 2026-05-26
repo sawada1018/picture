@@ -2,6 +2,7 @@ import { GuestStartForm } from "@/components/auth/guest-start-form";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
 import {
   getRequiredEnvChecklist,
+  getVercelDeployNote,
   supabaseEnvSetupHint,
 } from "@/lib/supabase/env";
 
@@ -12,6 +13,7 @@ export default async function LoginPage({
 }) {
   const { error } = await searchParams;
   const envChecks = error === "config" ? getRequiredEnvChecklist() : null;
+  const vercelNote = error === "config" ? getVercelDeployNote() : null;
   const healthPath = "/api/health";
 
   return (
@@ -54,10 +56,17 @@ export default async function LoginPage({
                   </li>
                 ))}
               </ul>
+              {vercelNote ? (
+                <p className="mt-2 rounded-lg bg-amber-100/80 px-2 py-1.5 text-[11px] font-medium leading-relaxed text-amber-950">
+                  {vercelNote}
+                </p>
+              ) : null}
               <p className="mt-2 leading-relaxed">{supabaseEnvSetupHint()}</p>
               <p className="mt-2 text-[11px] leading-relaxed text-amber-800/90">
                 登録後は必ず <strong>Redeploy</strong>（保存だけでは反映されません）。
                 Root Directory は <strong>web</strong>。
+                本番 URL（例 <code className="text-[10px]">picture-gjnx.vercel.app</code>
+                ）でも同じ4変数が必要です。
               </p>
               <p className="mt-1 text-[11px] text-amber-800/80">
                 診断:{" "}

@@ -21,11 +21,37 @@ export type EnvCheckItem = {
   hint?: string;
 };
 
+/** サイト URL（Vercel では VERCEL_URL から自動補完可） */
+export function getSiteUrl(): string | undefined {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (explicit) return explicit.replace(/\/$/, "");
+
+  const production = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  if (production) return `https://${production.replace(/^https?:\/\//, "")}`;
+
+  const vercel = process.env.VERCEL_URL?.trim();
+  if (vercel) return `https://${vercel.replace(/^https?:\/\//, "")}`;
+
+  return undefined;
+}
+
+export function getVercelDeployNote(): string | null {
+  if (process.env.VERCEL !== "1") return null;
+  const target = process.env.VERCEL_ENV ?? "unknown";
+  if (target === "preview") {
+    return "いま Preview デプロイです。環境変数は Vercel で「Preview」にもチェックを入れ、保存後に Redeploy してください。";
+  }
+  if (target === "production") {
+    return "Production デプロイです。環境変数は「Production」にチェックがあるか確認し、Redeploy してください。";
+  }
+  return null;
+}
+
 /** ログイン画面・診断用（値は返さない） */
 export function getRequiredEnvChecklist(): EnvCheckItem[] {
   const env = getSupabaseEnv();
   const hasSecret = !!getSupabaseServiceRoleKey();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const siteUrl = getSiteUrl();
   const vercelHost = process.env.VERCEL_URL?.trim();
 
   return [
@@ -108,7 +134,7 @@ export function formatSupabaseEnvError(missing: string[]): string {
 /** 本番（Vercel）向けの設定手順をログイン画面などで表示する */
 export function supabaseEnvSetupHint(): string {
   if (process.env.VERCEL === "1") {
-    return "Vercel ダッシュボード → Settings → Environment Variables に登録し、保存後に Redeploy してください。";
+    return "Vercel → Settings → Environment Variables。4変数すべてに Production・Preview・Development をオン → Save → Deployments → Redeploy。";
   }
   return "web/.env.local を作成し、dev サーバーを再起動してください。";
 }

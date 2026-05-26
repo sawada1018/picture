@@ -16,6 +16,14 @@ Vercel ダッシュボード → プロジェクト → **Settings** → **Envir
 
 > ⚠️ 保存しただけでは古いビルドのままです。必ず **Redeploy** してください。
 
+### Preview URL で全部 ✗ になるとき
+
+`https://xxxx-あなたのチーム.vercel.app` のような URL は **Preview デプロイ**です。  
+環境変数を **Production だけ** に入れていると、Preview では4つとも未設定になります。
+
+**対処:** 各変数の編集画面で **Preview** にもチェック → Save → Redeploy。  
+または Vercel の **Domains** に表示される本番 URL（例 `picture-gjnx.vercel.app`）で開く。
+
 | 変数名 | 取得場所 |
 |--------|----------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API → **Project URL** |

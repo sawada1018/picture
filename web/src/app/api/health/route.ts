@@ -1,4 +1,8 @@
-import { getSupabaseEnv, getSupabaseServiceRoleKey } from "@/lib/supabase/env";
+import {
+  getSiteUrl,
+  getSupabaseEnv,
+  getSupabaseServiceRoleKey,
+} from "@/lib/supabase/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
@@ -24,8 +28,12 @@ export async function GET() {
       detail: hasSecret ? "設定済み（サーバー専用）" : "未設定",
     },
     siteUrl: {
-      ok: !!process.env.NEXT_PUBLIC_SITE_URL?.trim(),
-      detail: process.env.NEXT_PUBLIC_SITE_URL ?? "未設定",
+      ok: !!getSiteUrl(),
+      detail: getSiteUrl() ?? "未設定",
+    },
+    vercelEnv: {
+      ok: true,
+      detail: process.env.VERCEL_ENV ?? "local",
     },
   };
 
