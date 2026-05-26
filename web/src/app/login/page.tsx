@@ -1,5 +1,6 @@
 import { GuestStartForm } from "@/components/auth/guest-start-form";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
+import { supabaseEnvSetupHint } from "@/lib/supabase/env";
 
 export default async function LoginPage({
   searchParams,
@@ -33,7 +34,13 @@ export default async function LoginPage({
               <ul className="mt-2 list-inside list-disc space-y-1">
                 <li>NEXT_PUBLIC_SUPABASE_URL</li>
                 <li>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</li>
+                <li>SUPABASE_SECRET_KEY（サーバー用・保存 API など）</li>
+                <li>NEXT_PUBLIC_SITE_URL（本番の Vercel URL）</li>
               </ul>
+              <p className="mt-2 leading-relaxed">{supabaseEnvSetupHint()}</p>
+              <p className="mt-1 text-[11px] text-amber-800/80">
+                詳細: web/docs/VERCEL-DEPLOY.md
+              </p>
             </div>
           )}
           {error === "auth" && (

@@ -50,5 +50,17 @@ export function getSupabaseServiceRoleKey(): string | undefined {
 }
 
 export function formatSupabaseEnvError(missing: string[]): string {
-  return `Supabase の環境変数が未設定です: ${missing.join(", ")}。web/.env.local を確認してください。`;
+  const where =
+    process.env.VERCEL === "1"
+      ? "Vercel の Project Settings → Environment Variables（Root Directory は web）"
+      : "web/.env.local";
+  return `Supabase の環境変数が未設定です: ${missing.join(", ")}。${where} を確認してください。`;
+}
+
+/** 本番（Vercel）向けの設定手順をログイン画面などで表示する */
+export function supabaseEnvSetupHint(): string {
+  if (process.env.VERCEL === "1") {
+    return "Vercel ダッシュボード → Settings → Environment Variables に登録し、保存後に Redeploy してください。";
+  }
+  return "web/.env.local を作成し、dev サーバーを再起動してください。";
 }
