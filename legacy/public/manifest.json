@@ -1,0 +1,24 @@
+{
+  "name": "ふたりおえ - 二人のお絵描き",
+  "short_name": "ふたりおえ",
+  "description": "毎日AIのお題で、彼氏・彼女とお絵描き。相手の絵がアイコンに。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fff5f8",
+  "theme_color": "#ff6b9d",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/default.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/default.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

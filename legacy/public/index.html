@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#ff6b9d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="description" content="二人で毎日お絵描き。彼の絵があなたのアイコンに。" />
+    <title>ふたりおえ</title>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" id="favicon" href="/icons/default.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" id="apple-touch-icon" href="/icons/default.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- オンボーディング -->
+      <section id="screen-welcome" class="screen active">
+        <div class="hero">
+          <div class="hero-icon" aria-hidden="true">💕</div>
+          <h1>ふたりおえ</h1>
+          <p class="tagline">毎日AIがお題を出す、二人だけのお絵描き</p>
+        </div>
+        <form id="form-start" class="card">
+          <label for="display-name">あなたの名前</label>
+          <input
+            id="display-name"
+            type="text"
+            maxlength="20"
+            placeholder="例：ゆい"
+            autocomplete="nickname"
+          />
+          <button type="submit" class="btn btn-primary">はじめる</button>
+        </form>
+      </section>
+
+      <!-- ペアリング -->
+      <section id="screen-pair" class="screen">
+        <header class="top-bar">
+          <h2>友達になる</h2>
+        </header>
+        <div class="card pair-card">
+          <p class="hint">彼氏・彼女に、このコードを送ってね</p>
+          <div class="friend-code-box">
+            <span class="label">あなたのコード</span>
+            <code id="my-friend-code">------</code>
+            <button type="button" id="btn-copy-code" class="btn btn-ghost btn-sm">
+              コピー
+            </button>
+          </div>
+          <div class="divider"><span>または</span></div>
+          <form id="form-pair">
+            <label for="partner-code">相手のコードを入力</label>
+            <input
+              id="partner-code"
+              type="text"
+              maxlength="6"
+              placeholder="6文字のコード"
+              autocapitalize="characters"
+              autocomplete="off"
+            />
+            <button type="submit" class="btn btn-primary">ペアになる 💑</button>
+          </form>
+          <p id="pair-error" class="error" hidden></p>
+        </div>
+      </section>
+
+      <!-- メイン -->
+      <section id="screen-main" class="screen">
+        <header class="top-bar main-header">
+          <div class="partner-badge" id="partner-badge">
+            <img id="partner-icon" class="partner-icon" src="/icons/default.svg" alt="" />
+            <div>
+              <span class="partner-label">今日のアイコン</span>
+              <strong id="partner-name">相手</strong>
+            </div>
+          </div>
+          <button type="button" id="btn-settings" class="btn-icon" title="設定">⚙️</button>
+        </header>
+
+        <article class="question-card card">
+          <div class="ai-badge">
+            <span class="ai-dot"></span>
+            今日のAIお題
+          </div>
+          <p id="daily-question" class="question-text">読み込み中…</p>
+          <time id="daily-date" class="date"></time>
+        </article>
+
+        <div class="canvas-wrap card">
+          <canvas id="draw-canvas" width="600" height="600"></canvas>
+          <div class="toolbar">
+            <div class="colors" id="color-palette"></div>
+            <label class="brush-size">
+              <span>太さ</span>
+              <input type="range" id="brush-size" min="2" max="32" value="6" />
+            </label>
+            <button type="button" id="btn-eraser" class="btn btn-ghost btn-sm">消しゴム</button>
+            <button type="button" id="btn-clear" class="btn btn-ghost btn-sm">クリア</button>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="btn-submit" class="btn btn-primary btn-lg">
+            今日の絵を送る ✨
+          </button>
+          <p id="submit-status" class="status"></p>
+        </div>
+
+        <section class="gallery card" id="gallery">
+          <h3>今日の二人の絵</h3>
+          <div class="gallery-grid">
+            <figure>
+              <figcaption>あなた</figcaption>
+              <img id="my-preview" alt="あなたの絵" />
+            </figure>
+            <figure>
+              <figcaption id="partner-caption">相手</figcaption>
+              <img id="partner-preview" alt="相手の絵" />
+            </figure>
+          </div>
+        </section>
+      </section>
+
+      <!-- 設定 -->
+      <dialog id="dialog-settings" class="dialog">
+        <form method="dialog" id="form-settings">
+          <h3>設定</h3>
+          <label for="settings-name">表示名</label>
+          <input id="settings-name" type="text" maxlength="20" />
+          <p class="hint">フレンドコード: <code id="settings-code"></code></p>
+          <div class="dialog-actions">
+            <button type="button" id="btn-reset" class="btn btn-danger btn-sm">
+              データをリセット
+            </button>
+            <button type="submit" class="btn btn-primary">閉じる</button>
+          </div>
+        </form>
+      </dialog>
+    </div>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+
+    <script src="/js/draw.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/sw.js").catch(() => {});
+      }
+    </script>
+  </body>
+</html>
