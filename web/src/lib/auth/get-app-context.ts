@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getPartnerProfile, type PartnerInfo } from "@/lib/pairs";
+import { getPartnerProfile, type PairInfo } from "@/lib/pairs";
 import { ensureUserProfile } from "@/lib/users";
 import type { User } from "@/types/database";
 import { redirect } from "next/navigation";
@@ -8,7 +8,7 @@ export type AppContext =
   | {
       ok: true;
       profile: User;
-      pairInfo: PartnerInfo | null;
+      pairInfo: PairInfo | null;
     }
   | {
       ok: false;
