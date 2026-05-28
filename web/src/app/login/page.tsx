@@ -1,3 +1,4 @@
+import { EmailPasswordForm } from "@/components/auth/email-password-form";
 import { GuestStartForm } from "@/components/auth/guest-start-form";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
 import {
@@ -87,6 +88,7 @@ export default async function LoginPage({
           )}
 
           {error !== "config" && <GuestStartForm />}
+          {error !== "config" && <EmailPasswordForm />}
 
           {error !== "config" && (
             <details className="mt-6 group">
