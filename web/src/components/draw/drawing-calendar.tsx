@@ -37,7 +37,7 @@ export function DrawingCalendar() {
   const today = todayInTokyo();
   const [viewYear, setViewYear] = useState(today.y);
   const [viewMonth, setViewMonth] = useState(today.m);
-  const [byDate, setByDate] = useState<Map<string, DrawingEntry>>(new Map());
+  const [byDate, setByDate] = useState<Map<string, CalendarDrawingEntry[]>>(new Map());
   const [selectedDate, setSelectedDate] = useState<string | null>(today.iso);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,9 +52,12 @@ export function DrawingCalendar() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "読み込みに失敗しました");
 
-      const map = new Map<string, DrawingEntry>();
-      for (const row of data.drawings as DrawingEntry[]) {
-        if (row.imageUrl) map.set(row.questionDate, row);
+      const map = new Map<string, CalendarDrawingEntry[]>();
+      for (const row of data.drawings as CalendarDrawingEntry[]) {
+        if (!row.imageUrl) continue;
+        const existing = map.get(row.questionDate) ?? [];
+        existing.push(row);
+        map.set(row.questionDate, existing);
       }
       setByDate(map);
     } catch (e) {
@@ -80,7 +83,7 @@ export function DrawingCalendar() {
     [viewYear, viewMonth]
   );
 
-  const selected = selectedDate ? byDate.get(selectedDate) : undefined;
+  const selected = selectedDate ? (byDate.get(selectedDate) ?? []) : [];
 
   function prevMonth() {
     if (viewMonth === 1) {
@@ -147,7 +150,8 @@ export function DrawingCalendar() {
             }
 
             const iso = toDateIso(viewYear, viewMonth, day);
-            const hasDrawing = byDate.has(iso);
+            const entries = byDate.get(iso) ?? [];
+            const hasDrawing = entries.length > 0;
             const isToday = iso === today.iso;
             const isSelected = iso === selectedDate;
 
@@ -186,15 +190,24 @@ export function DrawingCalendar() {
         {selectedDate ? (
           <>
             <p className="text-xs font-bold text-rose-500">{selectedDate}</p>
-            {selected?.imageUrl ? (
-              <div className="relative mt-3 aspect-square w-full overflow-hidden rounded-xl border-2 border-white bg-white shadow-sm">
-                <Image
-                  src={selected.imageUrl}
-                  alt={`${selectedDate} のお絵描き`}
-                  fill
-                  className="object-contain"
-                  unoptimized
-                />
+            {selected.length > 0 ? (
+              <div className="mt-3 space-y-4">
+                {selected.map((entry) => (
+                  <div key={`${entry.userId}-${entry.questionDate}`} className="rounded-xl bg-white p-3">
+                    <p className="text-xs font-bold text-slate-600">
+                      {entry.isMine ? "あなた" : `ともだち（${entry.ownerName}）`}
+                    </p>
+                    <div className="relative mt-2 aspect-square w-full overflow-hidden rounded-xl border-2 border-white bg-white shadow-sm">
+                      <Image
+                        src={entry.imageUrl}
+                        alt={`${selectedDate} のお絵描き（${entry.ownerName}）`}
+                        fill
+                        className="object-contain"
+                        unoptimized
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <p className="mt-4 text-center text-sm text-slate-500">
@@ -211,3 +224,9 @@ export function DrawingCalendar() {
     </section>
   );
 }
+
+type CalendarDrawingEntry = DrawingEntry & {
+  userId: string;
+  ownerName: string;
+  isMine: boolean;
+};

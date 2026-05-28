@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseEnv } from "@/lib/supabase/env";
+import { getPairForUser } from "@/lib/pairs";
 import {
   BUCKET,
   dataUrlToBuffer,
@@ -71,10 +72,15 @@ export async function GET(request: Request) {
     const start = `${year}-${mm}-01`;
     const end = `${year}-${mm}-${String(lastDayOfMonth(year, month)).padStart(2, "0")}`;
 
+    const pair = await getPairForUser(supabase, user.id);
+    const visibleUserIds = pair
+      ? [user.id, pair.user_a === user.id ? pair.user_b : pair.user_a]
+      : [user.id];
+
     const { data, error } = await supabase
       .from("drawings")
-      .select("question_date, image_url, updated_at")
-      .eq("user_id", user.id)
+      .select("user_id, question_date, image_url, updated_at")
+      .in("user_id", visibleUserIds)
       .gte("question_date", start)
       .lte("question_date", end)
       .order("question_date", { ascending: true });
@@ -83,10 +89,25 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    const { data: users, error: usersError } = await supabase
+      .from("users")
+      .select("id, display_name")
+      .in("id", visibleUserIds);
+
+    if (usersError) {
+      return NextResponse.json({ error: usersError.message }, { status: 500 });
+    }
+
+    const nameById = new Map((users ?? []).map((u) => [u.id, u.display_name]));
+
     return NextResponse.json({
       year,
       month,
       drawings: (data ?? []).map((row) => ({
+        userId: row.user_id,
+        ownerName:
+          nameById.get(row.user_id) ?? (row.user_id === user.id ? "あなた" : "ともだち"),
+        isMine: row.user_id === user.id,
         questionDate: row.question_date,
         imageUrl: row.image_url,
         updatedAt: row.updated_at,
