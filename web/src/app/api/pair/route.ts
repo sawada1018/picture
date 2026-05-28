@@ -1,5 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { normalizePairUsers } from "@/lib/pairs";
+import {
+  isPairsTableMissingError,
+  normalizePairUsers,
+  PAIRS_SETUP_HINT,
+} from "@/lib/pairs";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -13,11 +17,18 @@ export async function GET() {
     return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
   }
 
-  const { data: pair } = await supabase
+  const { data: pair, error: pairError } = await supabase
     .from("pairs")
     .select("id, user_a, user_b")
     .or(`user_a.eq.${user.id},user_b.eq.${user.id}`)
     .maybeSingle();
+
+  if (pairError) {
+    if (isPairsTableMissingError(pairError)) {
+      return NextResponse.json({ error: PAIRS_SETUP_HINT }, { status: 503 });
+    }
+    return NextResponse.json({ error: pairError.message }, { status: 500 });
+  }
 
   if (!pair) {
     return NextResponse.json({ paired: false, partner: null });
@@ -58,11 +69,18 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: existingPair } = await supabase
+  const { data: existingPair, error: existingPairError } = await supabase
     .from("pairs")
     .select("id")
     .or(`user_a.eq.${user.id},user_b.eq.${user.id}`)
     .maybeSingle();
+
+  if (existingPairError) {
+    if (isPairsTableMissingError(existingPairError)) {
+      return NextResponse.json({ error: PAIRS_SETUP_HINT }, { status: 503 });
+    }
+    return NextResponse.json({ error: existingPairError.message }, { status: 500 });
+  }
 
   if (existingPair) {
     return NextResponse.json(
@@ -99,11 +117,18 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: partnerPair } = await admin
+  const { data: partnerPair, error: partnerPairError } = await admin
     .from("pairs")
     .select("id")
     .or(`user_a.eq.${partner.id},user_b.eq.${partner.id}`)
     .maybeSingle();
+
+  if (partnerPairError) {
+    if (isPairsTableMissingError(partnerPairError)) {
+      return NextResponse.json({ error: PAIRS_SETUP_HINT }, { status: 503 });
+    }
+    return NextResponse.json({ error: partnerPairError.message }, { status: 500 });
+  }
 
   if (partnerPair) {
     return NextResponse.json(
@@ -120,6 +145,9 @@ export async function POST(request: Request) {
   });
 
   if (insertError) {
+    if (isPairsTableMissingError(insertError)) {
+      return NextResponse.json({ error: PAIRS_SETUP_HINT }, { status: 503 });
+    }
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 
