@@ -76,8 +76,9 @@ export async function GET(request: Request) {
     const visibleUserIds = pair
       ? [user.id, pair.user_a === user.id ? pair.user_b : pair.user_a]
       : [user.id];
+    const readerClient = createAdminClient() ?? supabase;
 
-    const { data, error } = await supabase
+    const { data, error } = await readerClient
       .from("drawings")
       .select("user_id, question_date, image_url, updated_at")
       .in("user_id", visibleUserIds)
@@ -89,7 +90,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const { data: users, error: usersError } = await supabase
+    const { data: users, error: usersError } = await readerClient
       .from("users")
       .select("id, display_name")
       .in("id", visibleUserIds);
