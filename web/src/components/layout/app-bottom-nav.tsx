@@ -1,5 +1,6 @@
 "use client";
 
+import { prefetchCalendarMonth, prefetchDrawPage } from "@/lib/drawings/prefetch";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -26,6 +27,14 @@ export function AppBottomNav() {
             <Link
               key={href}
               href={href}
+              onMouseEnter={() => {
+                if (href === "/") prefetchDrawPage();
+                if (href === "/calendar") prefetchCalendarMonth();
+              }}
+              onFocus={() => {
+                if (href === "/") prefetchDrawPage();
+                if (href === "/calendar") prefetchCalendarMonth();
+              }}
               className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-bold transition ${
                 active
                   ? "text-rose-600"

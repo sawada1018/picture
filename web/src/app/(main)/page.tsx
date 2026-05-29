@@ -1,14 +1,5 @@
-import { DrawingCanvasLazy } from "@/components/draw/drawing-canvas-lazy";
-import { DailyPromptCard } from "@/components/home/daily-prompt-card";
-import { getTodayPrompt } from "@/lib/prompts/daily-prompt";
+import { DrawPage } from "@/components/draw/draw-page";
 
-export default async function DrawPage() {
-  const dailyPrompt = await getTodayPrompt();
-
-  return (
-    <div className="space-y-6">
-      <DailyPromptCard prompt={dailyPrompt} />
-      <DrawingCanvasLazy />
-    </div>
-  );
+export default function HomePage() {
+  return <DrawPage />;
 }

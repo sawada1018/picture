@@ -1,12 +1,14 @@
+export type SavedDrawingEntry = {
+  userId: string;
+  ownerName: string;
+  isMine: boolean;
+  questionDate: string;
+  imageUrl: string;
+  updatedAt: string | null;
+};
+
 type MonthPayload = {
-  drawings: Array<{
-    userId: string;
-    ownerName: string;
-    isMine: boolean;
-    questionDate: string;
-    imageUrl: string;
-    updatedAt: string | null;
-  }>;
+  drawings: SavedDrawingEntry[];
 };
 
 const cache = new Map<string, MonthPayload>();
@@ -14,6 +16,20 @@ const inflight = new Map<string, Promise<MonthPayload>>();
 
 function cacheKey(year: number, month: number) {
   return `${year}-${month}`;
+}
+
+/** 保存直後に記録へ即反映（API 再取得を待たない） */
+export function applySavedDrawingToMonth(entry: SavedDrawingEntry) {
+  const [y, m] = entry.questionDate.split("-").map(Number);
+  if (!y || !m) return;
+
+  const key = cacheKey(y, m);
+  const prev = cache.get(key);
+  const merged = (prev?.drawings ?? []).filter(
+    (d) => !(d.userId === entry.userId && d.questionDate === entry.questionDate)
+  );
+  merged.push(entry);
+  cache.set(key, { drawings: merged });
 }
 
 export function invalidateMonthCache(year?: number, month?: number) {

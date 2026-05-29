@@ -230,11 +230,9 @@ export async function POST(request: Request) {
     image_url: imageUrl,
   };
 
-  const { data, error: dbError } = await admin
+  const { error: dbError } = await admin
     .from("drawings")
-    .upsert(row, { onConflict: "user_id,question_date" })
-    .select("question_date, updated_at, image_url")
-    .single();
+    .upsert(row, { onConflict: "user_id,question_date" });
 
   if (dbError) {
     const hint = /drawings/i.test(dbError.message)
@@ -246,10 +244,13 @@ export async function POST(request: Request) {
     );
   }
 
+  const updatedAt = new Date().toISOString();
+
   return NextResponse.json({
     ok: true,
-    imageUrl: data.image_url,
-    questionDate: data.question_date,
-    updatedAt: data.updated_at,
+    imageUrl,
+    questionDate: date,
+    updatedAt,
+    userId: user.id,
   });
 }

@@ -11,11 +11,18 @@ import {
   DRAW_PALETTE,
   useDrawingCanvas,
 } from "@/hooks/use-drawing-canvas";
-import { invalidateMonthCache } from "@/lib/drawings/month-cache";
+import { useAppData } from "@/components/layout/app-data-context";
+import { notifyDrawingSaved } from "@/lib/drawings/drawing-saved-event";
+import {
+  getTodayDrawing,
+  invalidateTodayCache,
+  prefetchTodayDrawing,
+} from "@/lib/drawings/today-cache";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 export function DrawingCanvas() {
+  const { profile } = useAppData();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [saveMessage, setSaveMessage] = useState("");
@@ -37,14 +44,15 @@ export function DrawingCanvas() {
     ready,
   } = useDrawingCanvas(canvasRef);
 
+  useEffect(() => {
+    prefetchTodayDrawing();
+  }, []);
+
   const loadTodayDrawing = useCallback(async () => {
     try {
-      const res = await fetch("/api/drawings");
-      if (!res.ok) return;
-      const data = await res.json();
-      const src = data.imageUrl ?? data.imageData;
-      if (src) {
-        loadFromDataUrl(src);
+      const data = await getTodayDrawing();
+      if (data.imageUrl) {
+        loadFromDataUrl(data.imageUrl);
       }
     } catch {
       /* 初回などは無視 */
@@ -76,10 +84,18 @@ export function DrawingCanvas() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "保存に失敗しました");
 
-      invalidateMonthCache();
+      invalidateTodayCache();
+      const savedAt = data.updatedAt ?? new Date().toISOString();
+      notifyDrawingSaved({
+        userId: profile.id,
+        ownerName: profile.display_name,
+        isMine: true,
+        questionDate: data.questionDate,
+        imageUrl: data.imageUrl,
+        updatedAt: savedAt,
+      });
       setSaveStatus("saved");
       setSaveMessage("保存しました ✨");
-      window.dispatchEvent(new Event("drawing-saved"));
     } catch (err) {
       setSaveStatus("error");
       setSaveMessage(

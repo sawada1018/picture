@@ -1,9 +1,10 @@
 "use client";
 
 import {
-  fetchMonthDrawings,
-  invalidateMonthCache,
-} from "@/lib/drawings/month-cache";
+  DRAWING_SAVED_EVENT,
+  parseDrawingSavedEvent,
+} from "@/lib/drawings/drawing-saved-event";
+import { fetchMonthDrawings } from "@/lib/drawings/month-cache";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { DrawingEntry } from "@/components/draw/drawing-types";
 
@@ -76,13 +77,27 @@ export function DrawingCalendar() {
   }, [fetchMonth]);
 
   useEffect(() => {
-    const onSaved = () => {
-      invalidateMonthCache(viewYear, viewMonth);
-      fetchMonth({ silent: true });
+    const onSaved = (event: Event) => {
+      const detail = parseDrawingSavedEvent(event);
+      if (detail) {
+        setByDate((prev) => {
+          const map = new Map(prev);
+          const list = (map.get(detail.questionDate) ?? []).filter(
+            (d) => !(d.userId === detail.userId && d.questionDate === detail.questionDate)
+          );
+          list.push(detail);
+          map.set(detail.questionDate, list);
+          return map;
+        });
+        if (detail.questionDate === selectedDate || !selectedDate) {
+          setSelectedDate(detail.questionDate);
+        }
+      }
+      void fetchMonth({ silent: true });
     };
-    window.addEventListener("drawing-saved", onSaved);
-    return () => window.removeEventListener("drawing-saved", onSaved);
-  }, [fetchMonth, viewYear, viewMonth]);
+    window.addEventListener(DRAWING_SAVED_EVENT, onSaved);
+    return () => window.removeEventListener(DRAWING_SAVED_EVENT, onSaved);
+  }, [fetchMonth, selectedDate]);
 
   const cells = useMemo(
     () => buildCalendarCells(viewYear, viewMonth),

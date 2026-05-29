@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import type { AppContext } from "@/lib/auth/get-app-context";
+import { prefetchCalendarMonth, prefetchDrawPage } from "@/lib/drawings/prefetch";
 
 type AppDataContextValue = {
   ctx: AppContext;
@@ -35,6 +36,10 @@ export function AppDataProvider({
     }
     const data = (await res.json()) as AppContext;
     setCtx(data);
+    if (data.ok) {
+      prefetchDrawPage();
+      prefetchCalendarMonth();
+    }
   }, []);
 
   useEffect(() => {
