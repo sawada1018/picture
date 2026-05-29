@@ -69,11 +69,29 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: existingPair, error: existingPairError } = await supabase
-    .from("pairs")
-    .select("id")
-    .or(`user_a.eq.${user.id},user_b.eq.${user.id}`)
-    .maybeSingle();
+  const admin = createAdminClient();
+  if (!admin) {
+    return NextResponse.json(
+      { error: "サーバー設定が不足しています" },
+      { status: 500 }
+    );
+  }
+
+  const [
+    { data: existingPair, error: existingPairError },
+    { data: partner, error: partnerError },
+  ] = await Promise.all([
+    admin
+      .from("pairs")
+      .select("id")
+      .or(`user_a.eq.${user.id},user_b.eq.${user.id}`)
+      .maybeSingle(),
+    admin
+      .from("users")
+      .select("id, display_name, friend_code")
+      .eq("friend_code", friendCode)
+      .maybeSingle(),
+  ]);
 
   if (existingPairError) {
     if (isPairsTableMissingError(existingPairError)) {
@@ -88,20 +106,6 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-
-  const admin = createAdminClient();
-  if (!admin) {
-    return NextResponse.json(
-      { error: "サーバー設定が不足しています" },
-      { status: 500 }
-    );
-  }
-
-  const { data: partner, error: partnerError } = await admin
-    .from("users")
-    .select("id, display_name, friend_code")
-    .eq("friend_code", friendCode)
-    .maybeSingle();
 
   if (partnerError || !partner) {
     return NextResponse.json(
@@ -139,7 +143,7 @@ export async function POST(request: Request) {
 
   const [userA, userB] = normalizePairUsers(user.id, partner.id);
 
-  const { error: insertError } = await supabase.from("pairs").insert({
+  const { error: insertError } = await admin.from("pairs").insert({
     user_a: userA,
     user_b: userB,
   });

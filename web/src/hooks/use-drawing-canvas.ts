@@ -24,6 +24,7 @@ export type DrawTool = "pen" | "eraser";
 
 const MAX_UNDO = 20;
 const MAX_DPR = 2;
+const MAX_EXPORT_PX = 640;
 
 type Point = { x: number; y: number };
 
@@ -138,9 +139,25 @@ export function useDrawingCanvas(
   }, [restoreSnapshot, syncUndoState]);
 
   const exportDataUrl = useCallback((): string => {
-    const canvas = canvasRef.current;
-    if (!canvas) return "";
-    return canvas.toDataURL("image/jpeg", 0.88);
+    const source = canvasRef.current;
+    if (!source) return "";
+
+    const logical = logicalSizeRef.current;
+    const exportSize = Math.min(logical, MAX_EXPORT_PX);
+
+    if (exportSize >= logical) {
+      return source.toDataURL("image/jpeg", 0.8);
+    }
+
+    const tmp = document.createElement("canvas");
+    tmp.width = exportSize;
+    tmp.height = exportSize;
+    const ctx = tmp.getContext("2d");
+    if (!ctx) return source.toDataURL("image/jpeg", 0.8);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, exportSize, exportSize);
+    ctx.drawImage(source, 0, 0, source.width, source.height, 0, 0, exportSize, exportSize);
+    return tmp.toDataURL("image/jpeg", 0.8);
   }, [canvasRef]);
 
   const setupCanvas = useCallback(

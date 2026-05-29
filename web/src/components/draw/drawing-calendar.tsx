@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  fetchMonthDrawings,
+  invalidateMonthCache,
+} from "@/lib/drawings/month-cache";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { DrawingEntry } from "@/components/draw/drawing-types";
 
@@ -41,41 +45,44 @@ export function DrawingCalendar() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMonth = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(
-        `/api/drawings?year=${viewYear}&month=${viewMonth}`
-      );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "読み込みに失敗しました");
-
-      const map = new Map<string, CalendarDrawingEntry[]>();
-      for (const row of data.drawings as CalendarDrawingEntry[]) {
-        if (!row.imageUrl) continue;
-        const existing = map.get(row.questionDate) ?? [];
-        existing.push(row);
-        map.set(row.questionDate, existing);
+  const fetchMonth = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!opts?.silent) {
+        setLoading(true);
       }
-      setByDate(map);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "読み込みに失敗しました");
-      setByDate(new Map());
-    } finally {
-      setLoading(false);
-    }
-  }, [viewYear, viewMonth]);
+      setError(null);
+      try {
+        const data = await fetchMonthDrawings(viewYear, viewMonth);
+        const map = new Map<string, CalendarDrawingEntry[]>();
+        for (const row of data.drawings as CalendarDrawingEntry[]) {
+          if (!row.imageUrl) continue;
+          const existing = map.get(row.questionDate) ?? [];
+          existing.push(row);
+          map.set(row.questionDate, existing);
+        }
+        setByDate(map);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "読み込みに失敗しました");
+        if (!opts?.silent) setByDate(new Map());
+      } finally {
+        if (!opts?.silent) setLoading(false);
+      }
+    },
+    [viewYear, viewMonth]
+  );
 
   useEffect(() => {
     fetchMonth();
   }, [fetchMonth]);
 
   useEffect(() => {
-    const onSaved = () => fetchMonth();
+    const onSaved = () => {
+      invalidateMonthCache(viewYear, viewMonth);
+      fetchMonth({ silent: true });
+    };
     window.addEventListener("drawing-saved", onSaved);
     return () => window.removeEventListener("drawing-saved", onSaved);
-  }, [fetchMonth]);
+  }, [fetchMonth, viewYear, viewMonth]);
 
   const cells = useMemo(
     () => buildCalendarCells(viewYear, viewMonth),

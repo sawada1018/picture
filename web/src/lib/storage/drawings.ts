@@ -1,12 +1,22 @@
 const BUCKET = "drawings";
 
-/** data URL (PNG) を Buffer に変換 */
+/** data URL を Buffer と MIME に変換 */
 export function dataUrlToBuffer(dataUrl: string): Buffer {
-  const match = dataUrl.match(/^data:image\/\w+;base64,(.+)$/);
+  return parseImageDataUrl(dataUrl).buffer;
+}
+
+export function parseImageDataUrl(dataUrl: string): {
+  buffer: Buffer;
+  contentType: string;
+} {
+  const match = dataUrl.match(/^data:(image\/[a-z+]+);base64,(.+)$/i);
   if (!match) {
     throw new Error("画像データの形式が不正です");
   }
-  return Buffer.from(match[1], "base64");
+  return {
+    contentType: match[1],
+    buffer: Buffer.from(match[2], "base64"),
+  };
 }
 
 /** Storage 上のオブジェクトパス: {userId}/{date}.png */

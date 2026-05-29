@@ -1,11 +1,10 @@
+"use client";
+
 import { PairSection } from "@/components/home/pair-section";
-import { getAppContext } from "@/lib/auth/get-app-context";
+import { useAppData } from "@/components/layout/app-data-context";
 
-export default async function FriendsPage() {
-  const ctx = await getAppContext();
-  if (!ctx.ok) return null;
-
-  const { profile, pairInfo } = ctx;
+export default function FriendsPage() {
+  const { profile, pairInfo, refresh } = useAppData();
 
   return (
     <div className="space-y-6">
@@ -23,6 +22,7 @@ export default async function FriendsPage() {
         paired={!!pairInfo}
         partnerName={pairInfo?.partner.display_name}
         partnerCode={pairInfo?.partner.friend_code}
+        onPaired={refresh}
       />
     </div>
   );

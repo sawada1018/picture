@@ -11,6 +11,7 @@ import {
   DRAW_PALETTE,
   useDrawingCanvas,
 } from "@/hooks/use-drawing-canvas";
+import { invalidateMonthCache } from "@/lib/drawings/month-cache";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -62,17 +63,20 @@ export function DrawingCanvas() {
     }
 
     setSaveStatus("saving");
-    setSaveMessage("");
+    setSaveMessage("保存中…");
+
+    const imageData = exportDataUrl();
 
     try {
       const res = await fetch("/api/drawings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageData: exportDataUrl() }),
+        body: JSON.stringify({ imageData }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "保存に失敗しました");
 
+      invalidateMonthCache();
       setSaveStatus("saved");
       setSaveMessage("保存しました ✨");
       window.dispatchEvent(new Event("drawing-saved"));

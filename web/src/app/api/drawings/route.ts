@@ -4,9 +4,9 @@ import { getSupabaseEnv } from "@/lib/supabase/env";
 import { getPairForUser } from "@/lib/pairs";
 import {
   BUCKET,
-  dataUrlToBuffer,
   drawingStoragePath,
   getDrawingPublicUrl,
+  parseImageDataUrl,
 } from "@/lib/storage/drawings";
 import { NextResponse } from "next/server";
 import type { Database } from "@/types/database";
@@ -72,15 +72,24 @@ export async function GET(request: Request) {
     const start = `${year}-${mm}-01`;
     const end = `${year}-${mm}-${String(lastDayOfMonth(year, month)).padStart(2, "0")}`;
 
-    const pair = await getPairForUser(supabase, user.id);
+    const admin = createAdminClient();
+    if (!admin) {
+      return NextResponse.json(
+        { error: "サーバー設定が不足しています" },
+        { status: 500 }
+      );
+    }
+
+    const pair = await getPairForUser(admin, user.id);
     const visibleUserIds = pair
       ? [user.id, pair.user_a === user.id ? pair.user_b : pair.user_a]
       : [user.id];
-    const readerClient = createAdminClient() ?? supabase;
 
-    const { data, error } = await readerClient
+    const { data, error } = await admin
       .from("drawings")
-      .select("user_id, question_date, image_url, updated_at")
+      .select(
+        "user_id, question_date, image_url, updated_at, users(display_name)"
+      )
       .in("user_id", visibleUserIds)
       .gte("question_date", start)
       .lte("question_date", end)
@@ -90,34 +99,33 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const { data: users, error: usersError } = await readerClient
-      .from("users")
-      .select("id, display_name")
-      .in("id", visibleUserIds);
-
-    if (usersError) {
-      return NextResponse.json({ error: usersError.message }, { status: 500 });
-    }
-
-    const nameById = new Map((users ?? []).map((u) => [u.id, u.display_name]));
-
     return NextResponse.json({
       year,
       month,
-      drawings: (data ?? []).map((row) => ({
-        userId: row.user_id,
-        ownerName:
-          nameById.get(row.user_id) ?? (row.user_id === user.id ? "あなた" : "ともだち"),
-        isMine: row.user_id === user.id,
-        questionDate: row.question_date,
-        imageUrl: row.image_url,
-        updatedAt: row.updated_at,
-      })),
+      drawings: (data ?? []).map((row) => {
+        const users = row.users as
+          | { display_name: string }
+          | { display_name: string }[]
+          | null;
+        const name = Array.isArray(users)
+          ? users[0]?.display_name
+          : users?.display_name;
+        return {
+          userId: row.user_id,
+          ownerName:
+            name ?? (row.user_id === user.id ? "あなた" : "ともだち"),
+          isMine: row.user_id === user.id,
+          questionDate: row.question_date,
+          imageUrl: row.image_url,
+          updatedAt: row.updated_at,
+        };
+      }),
     });
   }
 
   const date = dateParam ?? todayDateString();
-  const { data, error } = await supabase
+  const admin = createAdminClient() ?? supabase;
+  const { data, error } = await admin
     .from("drawings")
     .select("image_url, question_date, updated_at")
     .eq("user_id", user.id)
@@ -167,8 +175,11 @@ export async function POST(request: Request) {
   const storagePath = drawingStoragePath(user.id, date);
 
   let fileBuffer: Buffer;
+  let contentType: string;
   try {
-    fileBuffer = dataUrlToBuffer(imageData);
+    const parsed = parseImageDataUrl(imageData);
+    fileBuffer = parsed.buffer;
+    contentType = parsed.contentType;
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "画像の変換に失敗しました" },
@@ -183,12 +194,18 @@ export async function POST(request: Request) {
     );
   }
 
-  // 1. Supabase Storage にアップロード（パスは user.id で検証済み）
-  const storageClient = createAdminClient() ?? supabase;
-  const { error: uploadError } = await storageClient.storage
+  const admin = createAdminClient();
+  if (!admin) {
+    return NextResponse.json(
+      { error: "サーバー設定が不足しています" },
+      { status: 500 }
+    );
+  }
+
+  const { error: uploadError } = await admin.storage
     .from(BUCKET)
     .upload(storagePath, fileBuffer, {
-      contentType: "image/png",
+      contentType,
       upsert: true,
       cacheControl: "3600",
     });
@@ -213,7 +230,7 @@ export async function POST(request: Request) {
     image_url: imageUrl,
   };
 
-  const { data, error: dbError } = await supabase
+  const { data, error: dbError } = await admin
     .from("drawings")
     .upsert(row, { onConflict: "user_id,question_date" })
     .select("question_date, updated_at, image_url")

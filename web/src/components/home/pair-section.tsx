@@ -9,6 +9,7 @@ type Props = {
   paired: boolean;
   partnerName?: string | null;
   partnerCode?: string | null;
+  onPaired?: () => void | Promise<void>;
 };
 
 export function PairSection({
@@ -16,6 +17,7 @@ export function PairSection({
   paired,
   partnerName,
   partnerCode,
+  onPaired,
 }: Props) {
   const router = useRouter();
   const [code, setCode] = useState("");
@@ -40,6 +42,7 @@ export function PairSection({
 
       setSuccess(`${data.partner?.displayName ?? "相手"} とペア成立 💑`);
       setCode("");
+      await onPaired?.();
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "エラーが発生しました");

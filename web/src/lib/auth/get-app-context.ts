@@ -15,16 +15,22 @@ export type AppContext =
       ok: false;
       errorMessage: string;
       needsSchemaFix?: boolean;
+      unauthorized?: boolean;
     };
 
-export const getAppContext = cache(async (): Promise<AppContext> => {
+/** API / クライアント用（redirect しない） */
+export const fetchAppContext = cache(async (): Promise<AppContext> => {
   const supabase = await createClient();
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser();
 
   if (!authUser) {
-    redirect("/login");
+    return {
+      ok: false,
+      errorMessage: "ログインが必要です",
+      unauthorized: true,
+    };
   }
 
   const [{ user: profile, errorMessage, needsSchemaFix }, pairInfo] =
@@ -44,4 +50,13 @@ export const getAppContext = cache(async (): Promise<AppContext> => {
   }
 
   return { ok: true, profile, pairInfo };
+});
+
+/** サーバーコンポーネント用 */
+export const getAppContext = cache(async (): Promise<AppContext> => {
+  const ctx = await fetchAppContext();
+  if (!ctx.ok && ctx.unauthorized) {
+    redirect("/login");
+  }
+  return ctx;
 });
