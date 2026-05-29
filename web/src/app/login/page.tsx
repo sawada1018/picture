@@ -84,14 +84,12 @@ export default async function LoginPage({
           {error !== "config" && <EmailPasswordForm />}
 
           {error !== "config" && (
-            <details className="mt-6 group">
-              <summary className="cursor-pointer text-center text-xs font-bold text-slate-400 hover:text-rose-500">
-                かんたん開始（Google 不要・端末に保存）
-              </summary>
-              <div className="mt-4">
-                <GuestStartForm />
-              </div>
-            </details>
+            <div className="mt-6 border-t border-rose-100 pt-6">
+              <p className="mb-3 text-center text-xs font-bold text-slate-500">
+                かんたん開始（メール不要・端末に保存）
+              </p>
+              <GuestStartForm />
+            </div>
           )}
         </div>
       </div>
