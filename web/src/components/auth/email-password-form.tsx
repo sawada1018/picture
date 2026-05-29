@@ -1,5 +1,6 @@
 "use client";
 
+import { getAuthCallbackUrl } from "@/lib/auth/get-auth-callback-url";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -50,11 +51,11 @@ export function EmailPasswordForm() {
       return;
     }
 
-    const origin = window.location.origin;
+    const callbackUrl = getAuthCallbackUrl();
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: cleanedEmail,
       password,
-      options: { emailRedirectTo: `${origin}/auth/callback` },
+      options: { emailRedirectTo: callbackUrl },
     });
 
     if (signUpError) {
@@ -70,7 +71,7 @@ export function EmailPasswordForm() {
     }
 
     setMessage(
-      "確認メールを送信しました。メール内リンクを開いてからログインしてください。"
+      "確認メールを送信しました。メール内リンクを開いてからログインしてください。届かない場合は迷惑メールを確認してください。"
     );
     setLoading(false);
   }
@@ -88,7 +89,7 @@ export function EmailPasswordForm() {
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       cleanedEmail,
       {
-        redirectTo: `${window.location.origin}/login`,
+        redirectTo: getAuthCallbackUrl(),
       }
     );
     if (resetError) {

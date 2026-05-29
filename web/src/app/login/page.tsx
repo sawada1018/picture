@@ -1,6 +1,5 @@
 import { EmailPasswordForm } from "@/components/auth/email-password-form";
 import { GuestStartForm } from "@/components/auth/guest-start-form";
-import { GoogleLoginButton } from "@/components/auth/google-login-button";
 import {
   getRequiredEnvChecklist,
   getVercelDeployNote,
@@ -28,7 +27,7 @@ export default async function LoginPage({
             ふたりおえ
           </h1>
           <p className="mt-2 text-sm text-rose-400/90">
-            名前を入れてすぐ開始。友達コードで二人につながる。
+            メールで登録して、友達コードで二人につながる。
           </p>
         </div>
 
@@ -63,12 +62,6 @@ export default async function LoginPage({
                 </p>
               ) : null}
               <p className="mt-2 leading-relaxed">{supabaseEnvSetupHint()}</p>
-              <p className="mt-2 text-[11px] leading-relaxed text-amber-800/90">
-                登録後は必ず <strong>Redeploy</strong>（保存だけでは反映されません）。
-                Root Directory は <strong>web</strong>。
-                本番 URL（例 <code className="text-[10px]">picture-gjnx.vercel.app</code>
-                ）でも同じ4変数が必要です。
-              </p>
               <p className="mt-1 text-[11px] text-amber-800/80">
                 診断:{" "}
                 <a href={healthPath} className="underline">
@@ -83,20 +76,20 @@ export default async function LoginPage({
               className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-center text-sm font-medium text-red-600"
               role="alert"
             >
-              ログインに失敗しました。かんたん開始をお試しください。
+              メール確認リンクの有効期限切れ、または Supabase の Redirect URL
+              未設定の可能性があります。
             </p>
           )}
 
-          {error !== "config" && <GuestStartForm />}
           {error !== "config" && <EmailPasswordForm />}
 
           {error !== "config" && (
             <details className="mt-6 group">
               <summary className="cursor-pointer text-center text-xs font-bold text-slate-400 hover:text-rose-500">
-                Google でログイン（任意）
+                かんたん開始（Google 不要・端末に保存）
               </summary>
               <div className="mt-4">
-                <GoogleLoginButton />
+                <GuestStartForm />
               </div>
             </details>
           )}

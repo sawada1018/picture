@@ -33,16 +33,27 @@ Vercel ダッシュボード → プロジェクト → **Settings** → **Envir
 
 > `NEXT_PUBLIC_` が付く変数はビルド時に埋め込まれます。追加・変更後は **Redeploy** が必要です。
 
-## 3. Supabase 側（認証）
+## 3. Supabase 側（認証・メール）
 
 **Authentication → URL Configuration**
 
-- **Site URL**: `https://あなたのプロジェクト.vercel.app`
+- **Site URL**: `https://picture-wa6u.vercel.app`（本番 URL）
 - **Redirect URLs** に追加:
-  - `https://あなたのプロジェクト.vercel.app/auth/callback`
+  - `https://picture-wa6u.vercel.app/auth/callback`
   - `http://localhost:3000/auth/callback`（ローカル開発用）
 
-Google ログインを使う場合は、Google Cloud の OAuth 承認済みリダイレクト URI にも Supabase の Callback URL を登録してください。
+> メール確認リンクが「サーバに接続できない」になる場合、Redirect URLs に本番 URL が入っていないか、Site URL が `localhost` のままになっていることが多いです。
+
+**Authentication → Providers → Email**
+
+- Email プロバイダーを **有効**
+- 「Confirm email」は ON/OFF どちらでも可（ON なら確認メール必須）
+
+**メールが届かない場合**
+
+- 迷惑メールフォルダを確認
+- Supabase 無料枠は送信数に制限あり（Authentication → Logs で確認）
+- 本番運用は **Authentication → SMTP Settings** で独自 SMTP（Gmail / SendGrid 等）設定を推奨
 
 ## 4. 再デプロイ
 

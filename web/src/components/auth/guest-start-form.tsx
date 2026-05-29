@@ -78,7 +78,7 @@ export function GuestStartForm() {
       </button>
 
       <p className="text-center text-[11px] leading-relaxed text-slate-400">
-        Google アカウント不要。端末に保存されるので、
+        端末に保存されるので、
         <br />
         同じブラウザから再度開くと続きから使えます。
       </p>
