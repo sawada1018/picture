@@ -28,6 +28,8 @@ export function DrawingCanvas() {
     setPen,
     setEraser,
     clearCanvas,
+    undo,
+    canUndo,
     exportDataUrl,
     loadFromDataUrl,
     isBlank,
@@ -94,7 +96,7 @@ export function DrawingCanvas() {
     <section className="rounded-3xl border border-rose-100 bg-white/90 p-4 shadow-lg shadow-rose-100/30 sm:p-5">
       <h2 className="text-lg font-extrabold text-slate-800">お絵描き</h2>
       <p className="mt-1 text-xs text-slate-500">
-        ペン・色・太さ・消しゴムで描いて保存
+        ペン・消しゴム・一つ戻るで描いて保存
       </p>
 
       <div className="mt-4 overflow-hidden rounded-2xl border-2 border-rose-50 bg-white">
@@ -106,7 +108,7 @@ export function DrawingCanvas() {
       </div>
 
       <div className="mt-4 space-y-3">
-        {/* ツール: ペン / 消しゴム */}
+        {/* ツール: ペン / 消しゴム / 一つ戻る / クリア */}
         <div className="flex flex-wrap gap-2">
           <ToolButton
             active={tool === "pen"}
@@ -124,6 +126,23 @@ export function DrawingCanvas() {
           >
             🧽 消しゴム
           </ToolButton>
+          <button
+            type="button"
+            onClick={undo}
+            disabled={!canUndo}
+            aria-label="一つ戻る"
+            className="rounded-xl bg-rose-50 px-4 py-2 text-sm font-bold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            ↩ 一つ戻る
+          </button>
+          <button
+            type="button"
+            onClick={handleClear}
+            aria-label="クリア"
+            className="rounded-xl border border-rose-200 bg-white px-4 py-2 text-sm font-bold text-rose-600 transition hover:bg-rose-50"
+          >
+            クリア
+          </button>
         </div>
 
         {/* 色 */}
@@ -166,24 +185,15 @@ export function DrawingCanvas() {
           </label>
         </div>
 
-        {/* 保存・クリア */}
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saveStatus === "saving"}
-            className="flex-1 rounded-2xl bg-gradient-to-r from-rose-500 to-rose-600 px-6 py-3.5 text-sm font-extrabold text-white shadow-md shadow-rose-200 transition hover:from-rose-600 hover:to-rose-700 disabled:opacity-60"
-          >
-            {saveStatus === "saving" ? "保存中…" : "💾 保存する"}
-          </button>
-          <button
-            type="button"
-            onClick={handleClear}
-            className="rounded-2xl border border-rose-100 bg-rose-50 px-5 py-3.5 text-sm font-bold text-rose-600 transition hover:bg-rose-100"
-          >
-            クリア
-          </button>
-        </div>
+        {/* 保存 */}
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saveStatus === "saving"}
+          className="w-full rounded-2xl bg-gradient-to-r from-rose-500 to-rose-600 px-6 py-3.5 text-sm font-extrabold text-white shadow-md shadow-rose-200 transition hover:from-rose-600 hover:to-rose-700 disabled:opacity-60"
+        >
+          {saveStatus === "saving" ? "保存中…" : "💾 保存する"}
+        </button>
 
         {saveMessage && (
           <p

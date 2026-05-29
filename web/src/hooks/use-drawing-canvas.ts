@@ -34,7 +34,10 @@ export function useDrawingCanvas(
 
   const logicalSizeRef = useRef(400);
   const drawingRef = useRef(false);
+  const strokeStartedRef = useRef(false);
   const lastPointRef = useRef<Point | null>(null);
+  const undoStackRef = useRef<string[]>([]);
+  const [canUndo, setCanUndo] = useState(false);
 
   const getContext = useCallback(() => {
     const canvas = canvasRef.current;
@@ -50,6 +53,66 @@ export function useDrawingCanvas(
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, size, size);
   }, [getContext]);
+
+  const exportDataUrl = useCallback((): string => {
+    const canvas = canvasRef.current;
+    if (!canvas) return "";
+    return canvas.toDataURL("image/png");
+  }, [canvasRef]);
+
+  const syncUndoState = useCallback(() => {
+    setCanUndo(undoStackRef.current.length > 1);
+  }, []);
+
+  const resetUndoHistory = useCallback(
+    (snapshot?: string) => {
+      const base = snapshot ?? exportDataUrl();
+      undoStackRef.current = [base];
+      syncUndoState();
+    },
+    [exportDataUrl, syncUndoState]
+  );
+
+  const pushUndoSnapshot = useCallback(() => {
+    const snapshot = exportDataUrl();
+    const last = undoStackRef.current[undoStackRef.current.length - 1];
+    if (snapshot === last) return;
+    undoStackRef.current.push(snapshot);
+    if (undoStackRef.current.length > 50) {
+      undoStackRef.current.shift();
+    }
+    syncUndoState();
+  }, [exportDataUrl, syncUndoState]);
+
+  const restoreSnapshot = useCallback(
+    (dataUrl: string) => {
+      const canvas = canvasRef.current;
+      const ctx = getContext();
+      const size = logicalSizeRef.current;
+      if (!canvas || !ctx) return;
+
+      const img = new Image();
+      if (dataUrl.startsWith("http")) {
+        img.crossOrigin = "anonymous";
+      }
+      img.onload = () => {
+        fillWhite();
+        ctx.drawImage(img, 0, 0, size, size);
+      };
+      img.onerror = () => fillWhite();
+      img.src = dataUrl;
+    },
+    [canvasRef, fillWhite, getContext]
+  );
+
+  const undo = useCallback(() => {
+    if (undoStackRef.current.length <= 1) return;
+    undoStackRef.current.pop();
+    const previous =
+      undoStackRef.current[undoStackRef.current.length - 1] ?? "";
+    restoreSnapshot(previous);
+    syncUndoState();
+  }, [restoreSnapshot, syncUndoState]);
 
   const setupCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -68,7 +131,8 @@ export function useDrawingCanvas(
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     fillWhite();
     setReady(true);
-  }, [canvasRef, fillWhite]);
+    requestAnimationFrame(() => resetUndoHistory());
+  }, [canvasRef, fillWhite, resetUndoHistory]);
 
   const canvasToPoint = useCallback(
     (clientX: number, clientY: number): Point => {
@@ -112,6 +176,7 @@ export function useDrawingCanvas(
   const startDrawing = useCallback(
     (clientX: number, clientY: number) => {
       drawingRef.current = true;
+      strokeStartedRef.current = false;
       const p = canvasToPoint(clientX, clientY);
       lastPointRef.current = p;
       stroke(p, p);
@@ -124,29 +189,31 @@ export function useDrawingCanvas(
       if (!drawingRef.current) return;
       const p = canvasToPoint(clientX, clientY);
       const last = lastPointRef.current;
-      if (last) stroke(last, p);
+      if (last) {
+        stroke(last, p);
+        strokeStartedRef.current = true;
+      }
       lastPointRef.current = p;
     },
     [canvasToPoint, stroke]
   );
 
   const endDrawing = useCallback(() => {
+    if (drawingRef.current && strokeStartedRef.current) {
+      pushUndoSnapshot();
+    }
     drawingRef.current = false;
+    strokeStartedRef.current = false;
     lastPointRef.current = null;
-  }, []);
+  }, [pushUndoSnapshot]);
 
   const setPen = useCallback(() => setTool("pen"), []);
   const setEraser = useCallback(() => setTool("eraser"), []);
 
   const clearCanvas = useCallback(() => {
     fillWhite();
-  }, [fillWhite]);
-
-  const exportDataUrl = useCallback((): string => {
-    const canvas = canvasRef.current;
-    if (!canvas) return "";
-    return canvas.toDataURL("image/png");
-  }, [canvasRef]);
+    resetUndoHistory();
+  }, [fillWhite, resetUndoHistory]);
 
   const loadFromDataUrl = useCallback(
     (dataUrl: string | null) => {
@@ -157,6 +224,7 @@ export function useDrawingCanvas(
 
       if (!dataUrl) {
         fillWhite();
+        resetUndoHistory();
         return;
       }
 
@@ -167,11 +235,15 @@ export function useDrawingCanvas(
       img.onload = () => {
         fillWhite();
         ctx.drawImage(img, 0, 0, size, size);
+        resetUndoHistory(dataUrl);
       };
-      img.onerror = () => fillWhite();
+      img.onerror = () => {
+        fillWhite();
+        resetUndoHistory();
+      };
       img.src = dataUrl;
     },
-    [canvasRef, fillWhite, getContext]
+    [canvasRef, fillWhite, getContext, resetUndoHistory]
   );
 
   const isBlank = useCallback((): boolean => {
@@ -255,6 +327,8 @@ export function useDrawingCanvas(
     setPen,
     setEraser,
     clearCanvas,
+    undo,
+    canUndo,
     exportDataUrl,
     loadFromDataUrl,
     isBlank,
