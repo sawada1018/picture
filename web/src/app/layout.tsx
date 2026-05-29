@@ -4,7 +4,8 @@ import "./globals.css";
 
 const mPlus = M_PLUS_Rounded_1c({
   subsets: ["latin"],
-  weight: ["400", "700", "800"],
+  weight: ["400", "700"],
+  display: "swap",
   variable: "--font-rounded",
 });
 

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPartnerProfile, type PairInfo } from "@/lib/pairs";
 import { ensureUserProfile } from "@/lib/users";
 import type { User } from "@/types/database";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 
 export type AppContext =
@@ -16,7 +17,7 @@ export type AppContext =
       needsSchemaFix?: boolean;
     };
 
-export async function getAppContext(): Promise<AppContext> {
+export const getAppContext = cache(async (): Promise<AppContext> => {
   const supabase = await createClient();
   const {
     data: { user: authUser },
@@ -26,8 +27,11 @@ export async function getAppContext(): Promise<AppContext> {
     redirect("/login");
   }
 
-  const { user: profile, errorMessage, needsSchemaFix } =
-    await ensureUserProfile(supabase, authUser);
+  const [{ user: profile, errorMessage, needsSchemaFix }, pairInfo] =
+    await Promise.all([
+      ensureUserProfile(supabase, authUser),
+      getPartnerProfile(supabase, authUser.id),
+    ]);
 
   if (!profile) {
     return {
@@ -39,7 +43,5 @@ export async function getAppContext(): Promise<AppContext> {
     };
   }
 
-  const pairInfo = await getPartnerProfile(supabase, authUser.id);
-
   return { ok: true, profile, pairInfo };
-}
+});

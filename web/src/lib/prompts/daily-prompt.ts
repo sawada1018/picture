@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { promptForDate } from "@/lib/prompts/local-365";
+import { cache } from "react";
 
 export type DailyPromptSource = "local" | "database";
 
@@ -91,21 +92,17 @@ async function fetchTodayPrompt(
  * 今日のお題を取得。
  * DB に今日の行があればそれを優先。なければアプリ内のお題（日付で決まる1つ）。
  */
-export async function getTodayPrompt(): Promise<DailyPrompt> {
+export const getTodayPrompt = cache(async (): Promise<DailyPrompt> => {
   const { date } = todayRangeIso();
+  const local = localPromptForDate(date);
 
   try {
     const supabase = await createClient();
     const existing = await fetchTodayPrompt(supabase);
-
-    if (existing) {
-      return existing;
-    }
-
-    return localPromptForDate(date);
+    return existing ?? local;
   } catch {
-    return localPromptForDate(date);
+    return local;
   }
-}
+});
 
 export const getOrCreateTodayPrompt = getTodayPrompt;

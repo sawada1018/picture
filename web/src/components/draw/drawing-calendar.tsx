@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { DrawingEntry } from "@/components/draw/drawing-types";
 
@@ -197,13 +196,14 @@ export function DrawingCalendar() {
                     <p className="text-xs font-bold text-slate-600">
                       {entry.isMine ? "あなた" : `ともだち（${entry.ownerName}）`}
                     </p>
-                    <div className="relative mt-2 aspect-square w-full overflow-hidden rounded-xl border-2 border-white bg-white shadow-sm">
-                      <Image
+                    <div className="mt-2 aspect-square w-full overflow-hidden rounded-xl border-2 border-white bg-white shadow-sm">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
                         src={entry.imageUrl}
                         alt={`${selectedDate} のお絵描き（${entry.ownerName}）`}
-                        fill
-                        className="object-contain"
-                        unoptimized
+                        className="h-full w-full object-contain"
+                        loading="lazy"
+                        decoding="async"
                       />
                     </div>
                   </div>

@@ -9,10 +9,7 @@ export function DailyPromptCard({ prompt }: { prompt: DailyPrompt }) {
   return (
     <section className="rounded-3xl border border-rose-100 bg-white/90 p-6 shadow-lg shadow-rose-100/30">
       <div className="mb-3 flex items-center gap-2">
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-violet-500" />
-        </span>
+        <span className="inline-flex h-2 w-2 rounded-full bg-violet-500" aria-hidden />
         <span className="text-xs font-bold text-violet-600">
           {SOURCE_LABEL[prompt.source]}
         </span>
